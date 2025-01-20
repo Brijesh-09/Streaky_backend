@@ -25,4 +25,4 @@ router.get('/', authenticateToken, (req, res) => {
     res.status(200).json({ message: `Welcome, ${req.user.username}!` });
 });
 
-module.exports = router;
+module.exports = authenticateToken;

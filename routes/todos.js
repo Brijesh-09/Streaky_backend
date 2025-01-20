@@ -52,6 +52,11 @@ router.post('/addContribution/:todoId', authenticateToken, async (req, res) => {
             return res.status(400).json({ message: "Contribution is required" });
         }
 
+        // Ensure contribution is a string
+        if (typeof contribution !== 'string') {
+            return res.status(400).json({ message: "Contribution must be a string" });
+        }
+
         // Find the Todo by its ID
         const todo = await Todo.findById(todoId);
 
@@ -59,13 +64,19 @@ router.post('/addContribution/:todoId', authenticateToken, async (req, res) => {
             return res.status(404).json({ message: "Todo not found" });
         }
 
-        // Add the new contribution to the contributions array
-        todo.contributions.push(contribution);
+        // Add the new contribution with a timestamp to the contributions array
+        todo.contributions.push({
+            contribution: contribution, // Store contribution text as a string
+            date: new Date() // Add the current timestamp
+        });
+
+        // Increment streak
+        todo.streak += 1;
 
         // Save the updated Todo
         await todo.save();
 
-        // Send the success response only once
+        // Send the success response
         res.status(200).json({
             message: 'Contribution added successfully',
             todo: todo

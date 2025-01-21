@@ -64,14 +64,35 @@ router.post('/addContribution/:todoId', authenticateToken, async (req, res) => {
             return res.status(404).json({ message: "Todo not found" });
         }
 
+        // Check if there are contributions already
+        const contributions = todo.contributions;
+
+        if (contributions.length > 0) {
+            // Get the last contribution
+            const lastContribution = contributions[contributions.length - 1];
+
+            if (lastContribution.date) {
+                const lastContributionDate = new Date(lastContribution.date);
+                const currentDate = new Date();
+
+                // Calculate the time difference in seconds
+                const timeDifference = (currentDate - lastContributionDate) / 1000; // Convert to seconds
+
+                // Increment streak only if the difference is more than 1 minute and less than 2 minutes
+                if (timeDifference > 60 && timeDifference <= 120) {
+                    todo.streak += 1;
+                }
+            }
+        } else {
+            // If no contributions exist, start the streak with the first contribution
+            todo.streak = 1;
+        }
+
         // Add the new contribution with a timestamp to the contributions array
         todo.contributions.push({
-            contribution: contribution, // Store contribution text as a string
-            date: new Date() // Add the current timestamp
+            contribution: contribution,
+            date: new Date()
         });
-
-        // Increment streak
-        todo.streak += 1;
 
         // Save the updated Todo
         await todo.save();
@@ -79,6 +100,7 @@ router.post('/addContribution/:todoId', authenticateToken, async (req, res) => {
         // Send the success response
         res.status(200).json({
             message: 'Contribution added successfully',
+            streak: todo.streak,
             todo: todo
         });
 
@@ -90,6 +112,8 @@ router.post('/addContribution/:todoId', authenticateToken, async (req, res) => {
         }
     }
 });
+
+
 
 
 module.exports = router;

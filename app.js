@@ -28,7 +28,7 @@ cron.schedule("30 5 * * *", async () => {
         // Calculate the difference in hours
         const diffInHours = Math.abs((lastContribution - secondLastContribution) / (1000 * 60 * 60));
 
-        if (diffInHours > 24) {
+        if (diffInHours > 48) {
           // Reset the streak to 0 if the difference is greater than 24 hours
           todo.streak = 0;
           await todo.save();

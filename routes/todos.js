@@ -84,7 +84,7 @@ router.post('/addContribution/:todoId', authenticateToken, async (req, res) => {
             const timeDifference = (lastContributionTime - secondLastContributionTime) / (1000 * 60 * 60); // Difference in hours
         
             // Increment streak if the time difference is between 23 and 24 hours
-            if (timeDifference >= 23 && timeDifference < 24) {
+            if (timeDifference >= 24 && timeDifference < 48) {
                 todo.streak += 1;
             }
         }

@@ -74,17 +74,18 @@ router.post('/addContribution/:todoId', authenticateToken, async (req, res) => {
         const contributionsLength = todo.contributions.length;
 
         if (todo.streak === 0) {
-            // If the streak was reset, increment it for the first contribution after reset
+            // If the streak was reset, start the streak for the first contribution after reset
             todo.streak = 1;
         } else if (contributionsLength > 1) {
-            // Compare n and n-1 for regular contributions
+            // Compare n and n-1 contributions for streak calculations
             const lastContributionTime = new Date(todo.contributions[contributionsLength - 1].date);
             const secondLastContributionTime = new Date(todo.contributions[contributionsLength - 2].date);
-
-            const timeDifference = (lastContributionTime - secondLastContributionTime) / 1000; // Difference in seconds
-
-            if (timeDifference > 60 && timeDifference < 120) {
-                todo.streak += 1; // Increment streak if time difference is between 1 and 2 minutes
+        
+            const timeDifference = (lastContributionTime - secondLastContributionTime) / (1000 * 60 * 60); // Difference in hours
+        
+            // Increment streak if the time difference is between 23 and 24 hours
+            if (timeDifference >= 23 && timeDifference < 24) {
+                todo.streak += 1;
             }
         }
 

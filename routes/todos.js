@@ -4,6 +4,7 @@ const router = express.Router();
 const Todo = require('../models/Todo');
 const User = require('../models/User');
 
+
 // Protected route: Get user info (Me)
 router.get('/me', authenticateToken, (req, res) => {
     res.status(200).json({ message: `Welcome, ${req.user.username}!` });
@@ -45,75 +46,84 @@ router.post('/add', authenticateToken, async (req, res) => {
 
 router.post('/addContribution/:todoId', authenticateToken, async (req, res) => {
     try {
-        const { contribution } = req.body; // Extract contribution from request body
-        const { todoId } = req.params; // Get Todo ID from route parameters
+        const { contribution } = req.body;
+        const { todoId } = req.params;
 
         if (!contribution) {
             return res.status(400).json({ message: "Contribution is required" });
         }
 
-        // Ensure contribution is a string
         if (typeof contribution !== 'string') {
             return res.status(400).json({ message: "Contribution must be a string" });
         }
 
-        // Find the Todo by its ID
         const todo = await Todo.findById(todoId);
 
         if (!todo) {
             return res.status(404).json({ message: "Todo not found" });
         }
 
-        // Check if there are contributions already
-        const contributions = todo.contributions;
+        const now = new Date();
 
-        if (contributions.length > 0) {
-            // Get the last contribution
-            const lastContribution = contributions[contributions.length - 1];
-
-            if (lastContribution.date) {
-                const lastContributionDate = new Date(lastContribution.date);
-                const currentDate = new Date();
-
-                // Calculate the time difference in seconds
-                const timeDifference = (currentDate - lastContributionDate) / 1000; // Convert to seconds
-
-                // Increment streak only if the difference is more than 1 minute and less than 2 minutes
-                if (timeDifference > 60 && timeDifference <= 120) {
-                    todo.streak += 1;
-                }
-            }
-        } else {
-            // If no contributions exist, start the streak with the first contribution
-            todo.streak = 1;
-        }
-
-        // Add the new contribution with a timestamp to the contributions array
+        // Add the new contribution
         todo.contributions.push({
             contribution: contribution,
-            date: new Date()
+            date: now,
         });
 
-        // Save the updated Todo
+        const contributionsLength = todo.contributions.length;
+
+        if (todo.streak === 0) {
+            // If the streak was reset, increment it for the first contribution after reset
+            todo.streak = 1;
+        } else if (contributionsLength > 1) {
+            // Compare n and n-1 for regular contributions
+            const lastContributionTime = new Date(todo.contributions[contributionsLength - 1].date);
+            const secondLastContributionTime = new Date(todo.contributions[contributionsLength - 2].date);
+
+            const timeDifference = (lastContributionTime - secondLastContributionTime) / 1000; // Difference in seconds
+
+            if (timeDifference > 60 && timeDifference < 120) {
+                todo.streak += 1; // Increment streak if time difference is between 1 and 2 minutes
+            }
+        }
+
         await todo.save();
 
-        // Send the success response
         res.status(200).json({
             message: 'Contribution added successfully',
-            streak: todo.streak,
-            todo: todo
+            todo: todo,
         });
-
     } catch (err) {
         console.error(err);
-        // Ensure we only send a response in case of errors
         if (!res.headersSent) {
             res.status(500).json({ message: 'Server error' });
         }
     }
 });
 
+router.get('/getmy', authenticateToken, async (req, res) => {
+    try {
+        // Extract user ID from the authenticated token
+        const userId = req.user.id; // Ensure `req.user` contains the user's ID from the token
+        
+        // Fetch all todos belonging to the authenticated user
+        const gettodos = await Todo.find({ user: userId });
 
+        // Check if the user has any todos
+        if (!gettodos || gettodos.length === 0) {
+            return res.status(404).json({ message: "No todos found for this user" });
+        }
 
+        // Return the todos for the user
+        res.status(200).json({
+            message: "User's todos fetched successfully",
+            todos: gettodos,
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
 
 module.exports = router;

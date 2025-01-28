@@ -12,9 +12,6 @@ app.use(express.json());
 app.use(cors())
 
 //cronjob
-const cron = require("node-cron");
-const Todo = require("./models/Todo"); // Adjust the path to your Todo model
-
 cron.schedule("30 5 * * *", async () => {
   try {
     console.log("Running the streak reset job...");

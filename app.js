@@ -14,7 +14,7 @@ app.use(cors())
 //cronjob
 cron.schedule("30 5 * * *", async () => {
   try {
-    console.log("Running the streak reset job...");
+    console.log("Running the streak update job...");
 
     // Fetch all todos
     const todos = await Todo.find({});
@@ -22,33 +22,35 @@ cron.schedule("30 5 * * *", async () => {
     for (const todo of todos) {
       if (todo.contributions && todo.contributions.length >= 2) {
         // Get the last two contributions' timestamps
-        const lastContribution = new Date(todo.contributions[todo.contributions.length - 1]);
-        const secondLastContribution = new Date(todo.contributions[todo.contributions.length - 2]);
+        const lastContribution = new Date(todo.contributions[todo.contributions.length - 1].date);
+        const secondLastContribution = new Date(todo.contributions[todo.contributions.length - 2].date);
 
         // Calculate the difference in hours
-        const diffInHours = Math.abs((lastContribution - secondLastContribution) / (1000 * 60 * 60));
+        const diffInHours = (lastContribution - secondLastContribution) / (1000 * 60 * 60);
 
-        if (diffInHours > 48) {
-          // Reset the streak to 0 if the difference is greater than 24 hours
+        if (diffInHours < 24) {
+          // Increment streak if the last contribution was made within the last 24 hours
+          todo.streak += 1;
+          await todo.save();
+          console.log(`Streak incremented for todo: ${todo._id}`);
+        }
+      } 
+
+      // Handle case where only one contribution exists
+      if (todo.contributions && todo.contributions.length > 0) {
+        const lastContribution = new Date(todo.contributions[todo.contributions.length - 1].date);
+        const diffFromNowInHours = (Date.now() - lastContribution) / (1000 * 60 * 60);
+
+        if (diffFromNowInHours >= 26) {
+          // Reset the streak if the last contribution was more than 24 hours ago
           todo.streak = 0;
           await todo.save();
           console.log(`Streak reset for todo: ${todo._id}`);
         }
-      } else if (todo.contributions && todo.contributions.length === 1) {
-        // Handle case with only one contribution
-        const lastContribution = new Date(todo.contributions[0]);
+      } 
 
-        // Calculate the difference from the current time
-        const diffFromNowInHours = Math.abs((Date.now() - lastContribution) / (1000 * 60 * 60));
-
-        if (diffFromNowInHours > 24) {
-          // Reset the streak to 0 if the last contribution was more than 24 hours ago
-          todo.streak = 0;
-          await todo.save();
-          console.log(`Streak reset for todo with only one contribution: ${todo._id}`);
-        }
-      } else {
-        // Handle case where there are no contributions
+      // Handle case where there are no contributions
+      if (!todo.contributions || todo.contributions.length === 0) {
         if (todo.streak !== 0) {
           todo.streak = 0;
           await todo.save();
@@ -57,7 +59,7 @@ cron.schedule("30 5 * * *", async () => {
       }
     }
   } catch (error) {
-    console.error("Error running the streak reset job:", error);
+    console.error("Error running the streak update job:", error);
   }
 });
 

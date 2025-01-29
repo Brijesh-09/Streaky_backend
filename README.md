@@ -30,3 +30,5 @@ Day 2: Contribution at 10:00 AM → too early, streak stays 1
        Next valid window starts at 2:00 PM
 
 --
+
+WE might have to right diff logic for streak update as its only get +1 when the contribution is made between 24 & 48 hrs and shift that to cron .

@@ -127,4 +127,27 @@ router.get('/getmy', authenticateToken, async (req, res) => {
     }
 });
 
+
+router.delete('/del/:todoId', authenticateToken, async (req, res) => {
+    try {
+        const { todoId } = req.params;
+
+        if (!todoId) {
+            return res.status(400).json({ message: "Todo ID is required" });
+        }
+
+        // Find and delete the todo by ID
+        const deletedTodo = await Todo.findByIdAndDelete(todoId);
+
+        if (!deletedTodo) {
+            return res.status(404).json({ message: "Todo not found" });
+        }
+
+        res.status(200).json({ message: "Todo deleted successfully", todo: deletedTodo });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
 module.exports = router;

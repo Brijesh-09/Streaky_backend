@@ -12,7 +12,7 @@ app.use(express.json());
 app.use(cors())
 
 //cronjob
-cron.schedule("* 5 * * *", async () => {
+cron.schedule("30 11 * * *", async () => {
   try {
     console.log("Running the streak update job...");
 
